@@ -38,11 +38,12 @@ if(SERVER)then
 	end
 
 	local function PlayerCanDupeCPPI(ply, ent)
-		return ent:CPPIGetOwner()==ply and duplicator.IsAllowed(ent:GetClass())
+		if ent.DoNotDuplicate or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
+		return ent:CPPIGetOwner()==ply
 	end
 	
 	local function PlayerCanDupeTool(ply, ent)
-		if not duplicator.IsAllowed(ent:GetClass()) then return false end
+		if ent.DoNotDuplicate or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
 		local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
 		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
 	end
@@ -56,10 +57,8 @@ if(SERVER)then
 		for i=1, #Entities do
 			ent = Entities[i]
 			pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) then
-				if PPCheck( ply, ent ) then
-					EntTable[ent:EntIndex()] = ent
-				end
+			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and PPCheck( ply, ent ) then	
+				EntTable[ent:EntIndex()] = ent
 			end
 		end
 
@@ -85,7 +84,7 @@ if(SERVER)then
 		
 		local z = math.Clamp((tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z), -16000, 16000)
 		ply.AdvDupe2.Position = trace.HitPos + Vector(0, 0, z)
-		ply.AdvDupe2.Angle = Angle(tonumber(ply:GetInfo("advdupe2_offset_pitch")), tonumber(ply:GetInfo("advdupe2_offset_yaw")), tonumber(ply:GetInfo("advdupe2_offset_roll")))
+		ply.AdvDupe2.Angle = Angle(ply:GetInfoNum("advdupe2_offset_pitch", 0), ply:GetInfoNum("advdupe2_offset_yaw", 0), ply:GetInfoNum("advdupe2_offset_roll", 0))
 		if(tobool(ply:GetInfo("advdupe2_offset_world")))then ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle end
 		
 		ply.AdvDupe2.Pasting = true

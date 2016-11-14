@@ -605,9 +605,10 @@ end
 local function ApplyEntityModifiers( Player, Ent )
 	if(not Ent.EntityMods)then return end
 	local status, error
-	for Type, ModFunction in pairs( duplicator.EntityModifiers ) do
-		if ( Ent.EntityMods[ Type ] ) then
-			status, error = pcall(ModFunction, Player, Ent, Ent.EntityMods[ Type ] )
+	for Type, Data in pairs( Ent.EntityMods ) do
+		local ModFunction = duplicator.EntityModifiers[ Type ]
+		if ( ModFunction ) then
+			status, error = pcall(ModFunction, Player, Ent, Data )
 			if(not status)then
 				if(Player)then
 					Player:ChatPrint('Error applying entity modifer, "'..tostring(Type)..'". ERROR: '..error)
@@ -1065,8 +1066,10 @@ local function AdvDupe2_Spawn()
 	
 	local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
 
-	if(not IsValid(Queue.Player))then
-		table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
+	if(not Queue or not IsValid(Queue.Player))then
+		if Queue then
+			table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
+		end
 		if(#AdvDupe2.JobManager.Queue==0)then 
 			hook.Remove("Tick", "AdvDupe2_Spawning")
 			DisablePropCreateEffect = nil
@@ -1209,9 +1212,10 @@ local function AdvDupe2_Spawn()
 			for i=#undos, 1, -1 do
 				if(undos[i] and undos[i].Name == str)then
 					undos[i] = nil
-					umsg.Start( "Undone", Queue.Player )
-						umsg.Long( i )
-					umsg.End()
+					-- Undo module netmessage
+					net.Start( "Undo_Undone" )
+					net.WriteInt( i, 16 )
+					net.Send( Queue.Player )
 					break
 				end
 			end
@@ -1335,9 +1339,10 @@ local function ErrorCatchSpawning()
 			for i=#undos, 1, -1 do
 				if(undos[i] and undos[i].Name == str)then
 					undos[i] = nil
-					umsg.Start( "Undone", Queue.Player )
-						umsg.Long( i )
-					umsg.End()
+					-- Undo module netmessage
+					net.Start( "Undo_Undone" )
+					net.WriteInt( i, 16 )
+					net.Send( Queue.Player )
 					break
 				end
 			end
